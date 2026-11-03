@@ -201,7 +201,7 @@ void playGame(const vector<Question>& all) {
         return;
     }
 
-    // the most questions allowed is 5, or fewer if there aren't enough
+    // the most questions allowed is 3, or fewer if there aren't enough
     int maxAmount = MAX_QUESTIONS;
     if ((int)pool.size() < maxAmount)
         maxAmount = pool.size();
@@ -248,7 +248,7 @@ int main() {
     bool running = true;
     while (running) {
         cout << "\n==============================\n";
-        cout << "        C++ QUIZ GAME\n";
+        cout << "     C++ RANDOM QUIZ GAME\n";
         cout << "==============================\n";
         cout << "  1) Play\n";
         cout << "  2) View high score\n";
