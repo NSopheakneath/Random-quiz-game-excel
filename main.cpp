@@ -10,9 +10,19 @@
 #include <cctype>
 using namespace std;
 
-const int MAX_QUESTIONS = 3;   
+const int MAX_QUESTIONS = 3;   // most questions allowed per game
+const int WIDTH = 50;         
 
-// Class: one quiz question
+// ---------- Colors ----------
+const string RESET  = "\033[0m";
+const string BOLD   = "\033[1m";
+const string RED    = "\033[31m";
+const string GREEN  = "\033[32m";
+const string YELLOW = "\033[33m";
+const string CYAN   = "\033[36m";
+const string GRAY   = "\033[90m";
+
+// ---------- Class: one quiz question ----------
 class Question {
 private:
     string category;
@@ -22,7 +32,7 @@ private:
     int correct;         // 1-4
 
 public:
-    // Constructor: 
+    // Constructor: sets up a question when it is created
     Question(string cat, string diff, string t,
              string a, string b, string c, string d, int right) {
         category = cat;
@@ -43,28 +53,86 @@ public:
     int getCorrect() const { return correct; }
 };
 
-//Helper: make text lowercase so "Easy" and "easy" match
+// =====================================================
+//                   UI HELPER FUNCTIONS
+// =====================================================
+
+void clearScreen() {
+    cout << "\033[2J\033[H"; 
+}
+
+
+string repeatChar(char c, int times) {
+    string result = "";
+    for (int i = 0; i < times; i++)
+        result += c;
+    return result;
+}
+
+// Prints  +------------------------------------------------+
+void printLine() {
+    cout << CYAN << "+" << repeatChar('-', WIDTH - 2) << "+" << RESET << "\n";
+}
+
+// Prints a title centered inside a box
+void printTitle(const string& title) {
+    int space = WIDTH - 2 - title.length();
+    int left = space / 2;
+    int right = space - left;
+
+    printLine();
+    cout << CYAN << "|" << RESET
+         << repeatChar(' ', left) << BOLD << title << RESET << repeatChar(' ', right)
+         << CYAN << "|" << RESET << "\n";
+    printLine();
+}
+
+// Prints a progress bar like  [#####---------------] 2/5
+void printProgress(int done, int total) {
+    int barSize = 20;
+    int filled = (done * barSize) / total;
+
+    cout << "[" << GREEN << repeatChar('#', filled)
+         << GRAY << repeatChar('-', barSize - filled) << RESET
+         << "] " << done << "/" << total;
+}
+
+void waitForEnter() {
+    cout << GRAY << "\n  Press Enter to continue..." << RESET;
+    string dummy;
+    getline(cin, dummy);
+}
+
+// Makes text lowercase so "Easy" and "easy" match
 string toLower(string s) {
     for (int i = 0; i < (int)s.length(); i++)
         s[i] = tolower(s[i]);
     return s;
 }
 
-// Input validation 
+// ---------- Input validation ----------
 int readInt(int low, int high) {
     int value;
     while (true) {
-        cout << "> ";
-        if (cin >> value && value >= low && value <= high)
+        cout << YELLOW << "  > " << RESET;
+        if (cin >> value && value >= low && value <= high) {
+            cin.ignore(numeric_limits<streamsize>::max(), '\n');   // clear rest of the line
             return value;
+        }
 
-        cin.clear();                                          // reset error state
-        cin.ignore(numeric_limits<streamsize>::max(), '\n');  // throw away bad input
-        cout << "Please enter a number from " << low << " to " << high << ".\n";
+        if (cin.eof())
+            exit(0);                                              // input closed, stop the program
+
+        cin.clear();                                              // reset error state
+        cin.ignore(numeric_limits<streamsize>::max(), '\n');      // throw away bad input
+        cout << RED << "  Please enter a number from " << low << " to " << high << "." << RESET << "\n";
     }
 }
 
-// File I/O: load questions from CSV 
+// =====================================================
+//                 FILE I/O AND DATA
+// =====================================================
+
 vector<Question> loadQuestions(const string& filename) {
     vector<Question> questions;
 
@@ -75,13 +143,13 @@ vector<Question> loadQuestions(const string& filename) {
     }
 
     string line;
-    getline(file, line);   // skip the header row
+    getline(file, line);   
 
     while (getline(file, line)) {
         if (!line.empty() && line.back() == '\r')
-            line.pop_back();                      // Windows line ending
+            line.pop_back();                      
 
-        stringstream ss(line);                    // lets us split the line by commas
+        stringstream ss(line);                    
         string category, difficulty, text, a, b, c, d, correctText;
 
         getline(ss, category, ',');
@@ -105,69 +173,6 @@ vector<Question> loadQuestions(const string& filename) {
     return questions;
 }
 
-//  Build the category list from the data 
-vector<string> getCategories(const vector<Question>& questions) {
-    vector<string> categories;
-    for (int i = 0; i < (int)questions.size(); i++) {
-        bool found = false;
-        for (int j = 0; j < (int)categories.size(); j++)
-            if (categories[j] == questions[i].getCategory())
-                found = true;
-        if (!found)
-            categories.push_back(questions[i].getCategory());
-    }
-    return categories;
-}
-
-// Menu: pick a category ("" means all) 
-string chooseCategory(const vector<Question>& questions) {
-    vector<string> categories = getCategories(questions);
-
-    cout << "\nChoose a category:\n";
-    cout << "  1) All\n";
-    for (int i = 0; i < (int)categories.size(); i++)
-        cout << "  " << (i + 2) << ") " << categories[i] << "\n";
-
-    int choice = readInt(1, categories.size() + 1);
-    if (choice == 1)
-        return "";
-    return categories[choice - 2];
-}
-
-//  Menu: pick a difficulty ("" means all) 
-string chooseDifficulty() {
-    cout << "\nChoose a difficulty:\n";
-    cout << "  1) All\n  2) Easy\n  3) Medium\n  4) Hard\n";
-
-    switch (readInt(1, 4)) {
-        case 2:  return "easy";
-        case 3:  return "medium";
-        case 4:  return "hard";
-        default: return "";
-    }
-}
-
-// Ask one question 
-bool askQuestion(const Question& q, int number, int total) {
-    cout << "\nQuestion " << number << "/" << total
-         << "  [" << q.getCategory() << " - " << q.getDifficulty() << "]\n";
-    cout << q.getText() << "\n\n";
-
-    for (int i = 0; i < 4; i++)
-        cout << "  " << (i + 1) << ") " << q.getChoice(i) << "\n";
-    cout << "\n";
-
-    int answer = readInt(1, 4);
-
-    if (answer == q.getCorrect()) {
-        cout << "Correct!\n";
-        return true;
-    }
-    cout << "Wrong! The answer was: " << q.getChoice(q.getCorrect() - 1) << "\n";
-    return false;
-}
-
-// High score file 
 int loadHighScore() {
     ifstream file("highscore.txt");
     int best = 0;
@@ -181,7 +186,136 @@ void saveHighScore(int percent) {
     file << percent;
 }
 
-// Play one round
+vector<string> getCategories(const vector<Question>& questions) {
+    vector<string> categories;
+    for (int i = 0; i < (int)questions.size(); i++) {
+        bool found = false;
+        for (int j = 0; j < (int)categories.size(); j++)
+            if (categories[j] == questions[i].getCategory())
+                found = true;
+        if (!found)
+            categories.push_back(questions[i].getCategory());
+    }
+    return categories;
+}
+
+// =====================================================
+//                       SCREENS
+// =====================================================
+
+// ---------- Pick a category ("" means all) ----------
+string chooseCategory(const vector<Question>& questions) {
+    vector<string> categories = getCategories(questions);
+
+    clearScreen();
+    printTitle("CHOOSE A CATEGORY");
+    cout << "\n";
+    cout << "  " << YELLOW << "[1]" << RESET << " All categories\n";
+    for (int i = 0; i < (int)categories.size(); i++)
+        cout << "  " << YELLOW << "[" << (i + 2) << "]" << RESET << " " << categories[i] << "\n";
+    cout << "\n";
+
+    int choice = readInt(1, categories.size() + 1);
+    if (choice == 1)
+        return "";
+    return categories[choice - 2];
+}
+
+// ---------- Pick a difficulty ("" means all) ----------
+string chooseDifficulty() {
+    clearScreen();
+    printTitle("CHOOSE A DIFFICULTY");
+    cout << "\n";
+    cout << "  " << YELLOW << "[1]" << RESET << " All levels\n";
+    cout << "  " << YELLOW << "[2]" << RESET << " " << GREEN  << "Easy"   << RESET << "\n";
+    cout << "  " << YELLOW << "[3]" << RESET << " " << YELLOW << "Medium" << RESET << "\n";
+    cout << "  " << YELLOW << "[4]" << RESET << " " << RED    << "Hard"   << RESET << "\n";
+    cout << "\n";
+
+    switch (readInt(1, 4)) {
+        case 2:  return "easy";
+        case 3:  return "medium";
+        case 4:  return "hard";
+        default: return "";
+    }
+}
+
+// ---------- Draw one question screen ----------
+// picked = 0 means the player has not answered yet
+void drawQuestion(const Question& q, int number, int total, int score, int picked) {
+    clearScreen();
+    printTitle("QUESTION " + to_string(number) + " OF " + to_string(total));
+
+    cout << "\n  Progress: ";
+    printProgress(number - 1, total);
+    cout << "\n  Score: " << YELLOW << score << RESET
+         << "     " << GRAY << q.getCategory() << " - " << q.getDifficulty() << RESET << "\n\n";
+
+    cout << "  " << BOLD << q.getText() << RESET << "\n\n";
+
+    for (int i = 0; i < 4; i++) {
+        int num = i + 1;
+        string choice = q.getChoice(i);
+
+        if (picked == 0) {
+            cout << "  " << YELLOW << "[" << num << "]" << RESET << " " << choice << "\n";
+        }
+        else if (num == q.getCorrect()) {
+            cout << "  " << GREEN << "[" << num << "] " << choice << "  <- correct" << RESET << "\n";
+        }
+        else if (num == picked) {
+            cout << "  " << RED << "[" << num << "] " << choice << "  <- your answer" << RESET << "\n";
+        }
+        else {
+            cout << "  " << GRAY << "[" << num << "] " << choice << RESET << "\n";
+        }
+    }
+    cout << "\n";
+}
+
+// ---------- Ask one question ----------
+bool askQuestion(const Question& q, int number, int total, int score) {
+    drawQuestion(q, number, total, score, 0);   // show it without answers marked
+    int answer = readInt(1, 4);
+
+    drawQuestion(q, number, total, score, answer);   // redraw with colors
+
+    bool isCorrect = (answer == q.getCorrect());
+    if (isCorrect)
+        cout << "  " << GREEN << BOLD << "Correct!" << RESET << "\n";
+    else
+        cout << "  " << RED << BOLD << "Wrong!" << RESET << "\n";
+
+    waitForEnter();
+    return isCorrect;
+}
+
+// ---------- Results screen ----------
+void showResults(int score, int amount) {
+    int percent = (score * 100) / amount;
+
+    clearScreen();
+    printTitle("RESULTS");
+    cout << "\n  Final score: " << BOLD << score << "/" << amount << RESET
+         << " (" << percent << "%)\n\n  ";
+    printProgress(score, amount);
+    cout << "\n\n  ";
+
+    if (percent >= 90)      cout << GREEN  << "Excellent!";
+    else if (percent >= 70) cout << GREEN  << "Great job!";
+    else if (percent >= 50) cout << YELLOW << "Not bad!";
+    else                    cout << RED    << "Keep practicing!";
+    cout << RESET << "\n";
+
+    if (percent > loadHighScore()) {
+        saveHighScore(percent);
+        cout << "\n  " << YELLOW << BOLD << "** NEW HIGH SCORE! **" << RESET << "\n";
+    }
+
+    waitForEnter();
+}
+
+// ---------- Play one round ----------
 void playGame(const vector<Question>& all) {
     string category = chooseCategory(all);
     string difficulty = chooseDifficulty();
@@ -197,16 +331,19 @@ void playGame(const vector<Question>& all) {
     }
 
     if (pool.empty()) {
-        cout << "\nNo questions match that choice. Try something else.\n";
+        cout << "\n  " << RED << "No questions match that choice. Try something else." << RESET << "\n";
+        waitForEnter();
         return;
     }
 
-    // the most questions allowed is 3, or fewer if there aren't enough
+    // the most questions allowed is 5, or fewer if there aren't enough
     int maxAmount = MAX_QUESTIONS;
     if ((int)pool.size() < maxAmount)
         maxAmount = pool.size();
 
-    cout << "\nHow many questions? (1-" << maxAmount << ")\n";
+    clearScreen();
+    printTitle("HOW MANY QUESTIONS?");
+    cout << "\n  Pick a number from 1 to " << maxAmount << ":\n\n";
     int amount = readInt(1, maxAmount);
 
     // shuffle the order so every game is different
@@ -215,29 +352,17 @@ void playGame(const vector<Question>& all) {
 
     int score = 0;
     for (int i = 0; i < amount; i++) {
-        if (askQuestion(pool[i], i + 1, amount))
+        if (askQuestion(pool[i], i + 1, amount, score))
             score++;
     }
 
-    int percent = (score * 100) / amount;
-
-    cout << "\n==============================\n";
-    cout << " Final score: " << score << "/" << amount << " (" << percent << "%)\n";
-
-    if (percent >= 90)      cout << " Excellent!\n";
-    else if (percent >= 70) cout << " Great job!\n";
-    else if (percent >= 50) cout << " Not bad!\n";
-    else                    cout << " Keep practicing!\n";
-
-    if (percent > loadHighScore()) {
-        saveHighScore(percent);
-        cout << " New high score!\n";
-    }
-    cout << "==============================\n";
+    showResults(score, amount);
 }
 
-// Main menu
+// ---------- Main menu ----------
 int main() {
+    system("");   // makes colors work in older Windows consoles
+
     vector<Question> questions = loadQuestions("questions.csv");
 
     if (questions.empty()) {
@@ -247,25 +372,24 @@ int main() {
 
     bool running = true;
     while (running) {
-        cout << "\n==============================\n";
-        cout << "     C++ RANDOM QUIZ GAME\n";
-        cout << "==============================\n";
-        cout << "  1) Play\n";
-        cout << "  2) View high score\n";
-        cout << "  3) Quit\n";
+        clearScreen();
+        printTitle("RANDOM QUIZ GAME");
+        cout << "\n";
+        cout << "  " << YELLOW << "[1]" << RESET << " Play\n";
+        cout << "  " << YELLOW << "[2]" << RESET << " Quit\n\n";
+        cout << "  Best score: " << GREEN << loadHighScore() << "%" << RESET << "\n\n";
 
-        switch (readInt(1, 3)) {
+        switch (readInt(1, 2)) {
             case 1:
                 playGame(questions);
                 break;
             case 2:
-                cout << "\nBest score: " << loadHighScore() << "%\n";
-                break;
-            case 3:
                 running = false;
+                clearScreen();
                 cout << "Thanks for playing!\n";
                 break;
         }
     }
     return 0;
 }
+
