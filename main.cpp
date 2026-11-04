@@ -53,9 +53,7 @@ public:
     int getCorrect() const { return correct; }
 };
 
-// =====================================================
-//                   UI HELPER FUNCTIONS
-// =====================================================
+
 
 void clearScreen() {
     cout << "\033[2J\033[H"; 
@@ -129,9 +127,7 @@ int readInt(int low, int high) {
     }
 }
 
-// =====================================================
-//                 FILE I/O AND DATA
-// =====================================================
+
 
 vector<Question> loadQuestions(const string& filename) {
     vector<Question> questions;
@@ -199,9 +195,7 @@ vector<string> getCategories(const vector<Question>& questions) {
     return categories;
 }
 
-// =====================================================
-//                       SCREENS
-// =====================================================
+
 
 // ---------- Pick a category ("" means all) ----------
 string chooseCategory(const vector<Question>& questions) {
@@ -336,7 +330,7 @@ void playGame(const vector<Question>& all) {
         return;
     }
 
-    // the most questions allowed is 5, or fewer if there aren't enough
+    // the most questions allowed is 3, or fewer if there aren't enough
     int maxAmount = MAX_QUESTIONS;
     if ((int)pool.size() < maxAmount)
         maxAmount = pool.size();
@@ -361,7 +355,7 @@ void playGame(const vector<Question>& all) {
 
 // ---------- Main menu ----------
 int main() {
-    system("");   // makes colors work in older Windows consoles
+    system("");   
 
     vector<Question> questions = loadQuestions("questions.csv");
 
