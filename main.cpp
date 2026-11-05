@@ -13,7 +13,7 @@ using namespace std;
 const int MAX_QUESTIONS = 3;   // most questions allowed per game
 const int WIDTH = 50;         
 
-// ---------- Colors ----------
+//  Colors 
 const string RESET  = "\033[0m";
 const string BOLD   = "\033[1m";
 const string RED    = "\033[31m";
@@ -22,7 +22,7 @@ const string YELLOW = "\033[33m";
 const string CYAN   = "\033[36m";
 const string GRAY   = "\033[90m";
 
-// ---------- Class: one quiz question ----------
+//  Class: one quiz question 
 class Question {
 private:
     string category;
@@ -108,7 +108,7 @@ string toLower(string s) {
     return s;
 }
 
-// ---------- Input validation ----------
+// Input validation 
 int readInt(int low, int high) {
     int value;
     while (true) {
@@ -197,7 +197,7 @@ vector<string> getCategories(const vector<Question>& questions) {
 
 
 
-// ---------- Pick a category ("" means all) ----------
+// Pick a category ("" means all) 
 string chooseCategory(const vector<Question>& questions) {
     vector<string> categories = getCategories(questions);
 
@@ -215,7 +215,7 @@ string chooseCategory(const vector<Question>& questions) {
     return categories[choice - 2];
 }
 
-// ---------- Pick a difficulty ("" means all) ----------
+// Pick a difficulty ("" means all)
 string chooseDifficulty() {
     clearScreen();
     printTitle("CHOOSE A DIFFICULTY");
@@ -234,7 +234,7 @@ string chooseDifficulty() {
     }
 }
 
-// ---------- Draw one question screen ----------
+// Draw one question screen 
 // picked = 0 means the player has not answered yet
 void drawQuestion(const Question& q, int number, int total, int score, int picked) {
     clearScreen();
@@ -267,7 +267,7 @@ void drawQuestion(const Question& q, int number, int total, int score, int picke
     cout << "\n";
 }
 
-// ---------- Ask one question ----------
+// Ask one question 
 bool askQuestion(const Question& q, int number, int total, int score) {
     drawQuestion(q, number, total, score, 0);   // show it without answers marked
     int answer = readInt(1, 4);
@@ -284,7 +284,7 @@ bool askQuestion(const Question& q, int number, int total, int score) {
     return isCorrect;
 }
 
-// ---------- Results screen ----------
+//  Results screen 
 void showResults(int score, int amount) {
     int percent = (score * 100) / amount;
 
@@ -309,7 +309,7 @@ void showResults(int score, int amount) {
     waitForEnter();
 }
 
-// ---------- Play one round ----------
+// Play one round 
 void playGame(const vector<Question>& all) {
     string category = chooseCategory(all);
     string difficulty = chooseDifficulty();
@@ -353,7 +353,7 @@ void playGame(const vector<Question>& all) {
     showResults(score, amount);
 }
 
-// ---------- Main menu ----------
+// Main menu 
 int main() {
     system("");   
 
